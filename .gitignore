@@ -1,0 +1,26 @@
+# dependencies
+node_modules
+
+# build outputs
+out
+dist
+
+# electron-builder cache
+.cache
+
+# env
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

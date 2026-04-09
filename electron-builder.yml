@@ -1,0 +1,29 @@
+appId: com.pragma.app
+productName: Pragma
+copyright: Copyright © 2025
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+
+# Unpack native modules from asar — better-sqlite3 cannot run from inside an archive
+asarUnpack:
+  - "**/node_modules/better-sqlite3/**"
+  - "**/node_modules/bindings/**"
+  - "**/node_modules/file-uri-to-path/**"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Pragma

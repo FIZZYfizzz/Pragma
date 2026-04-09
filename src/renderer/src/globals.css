@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+
+@theme {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+
+  --radius-card: 0.75rem;
+  --radius-panel: 1rem;
+  --radius-dialog: 1.25rem;
+
+  /* Priority colours */
+  --priority-none: #9b9b94;
+  --priority-low: #4ade80;
+  --priority-medium: #fbbf24;
+  --priority-high: #f97316;
+  --priority-urgent: #ef4444;
+}
+
+/* ─── Light theme (default) ─────────────────────────────────────────────────── */
+
+:root {
+  --bg-base: #f9f9f8;
+  --bg-surface: #f4f4f2;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #f0f0ee;
+  --bg-column: #efefed;
+  --bg-card: #ffffff;
+
+  --text-primary: #1a1a18;
+  --text-secondary: #4a4a46;
+  --text-tertiary: #8a8a84;
+
+  --border-subtle: #e8e8e4;
+  --border-medium: #d4d4ce;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.12);
+
+  --color-brand: #7c6af7;
+  --color-brand-subtle: color-mix(in srgb, #7c6af7 12%, transparent);
+}
+
+/* ─── Dark theme ────────────────────────────────────────────────────────────── */
+
+[data-theme="dark"] {
+  --bg-base: #111110;
+  --bg-surface: #1a1a18;
+  --bg-elevated: #242423;
+  --bg-subtle: #2a2a28;
+  --bg-column: #1e1e1c;
+  --bg-card: #242423;
+
+  --text-primary: #f0f0ee;
+  --text-secondary: #a0a09a;
+  --text-tertiary: #606058;
+
+  --border-subtle: #2e2e2c;
+  --border-medium: #3a3a38;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.6);
+
+  --color-brand: #7c6af7;
+  --color-brand-subtle: color-mix(in srgb, #7c6af7 15%, transparent);
+}
+
+/* ─── Blue theme ────────────────────────────────────────────────────────────── */
+
+[data-theme="blue"] {
+  --bg-base: #0f1117;
+  --bg-surface: #161b27;
+  --bg-elevated: #1e2535;
+  --bg-subtle: #232c40;
+  --bg-column: #1a2030;
+  --bg-card: #1e2535;
+  --text-primary: #e8edf5;
+  --text-secondary: #8b9ab5;
+  --text-tertiary: #4a5568;
+  --border-subtle: #2a3550;
+  --border-medium: #374461;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --color-brand: #60a5fa;
+  --color-brand-subtle: color-mix(in srgb, #60a5fa 15%, transparent);
+}
+
+/* ─── Violet theme ──────────────────────────────────────────────────────────── */
+
+[data-theme="violet"] {
+  --bg-base: #0e0d14;
+  --bg-surface: #16141f;
+  --bg-elevated: #1e1b2e;
+  --bg-subtle: #252038;
+  --bg-column: #1a1828;
+  --bg-card: #1e1b2e;
+  --text-primary: #ede8ff;
+  --text-secondary: #9b93c4;
+  --text-tertiary: #544e6e;
+  --border-subtle: #2a2545;
+  --border-medium: #3a3460;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --color-brand: #a78bfa;
+  --color-brand-subtle: color-mix(in srgb, #a78bfa 15%, transparent);
+}
+
+/* ─── Sage theme ────────────────────────────────────────────────────────────── */
+
+[data-theme="sage"] {
+  --bg-base: #0d1210;
+  --bg-surface: #141a16;
+  --bg-elevated: #1b2420;
+  --bg-subtle: #212d28;
+  --bg-column: #172019;
+  --bg-card: #1b2420;
+  --text-primary: #e4ede8;
+  --text-secondary: #869e90;
+  --text-tertiary: #445248;
+  --border-subtle: #263330;
+  --border-medium: #344540;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --color-brand: #6ee7b7;
+  --color-brand-subtle: color-mix(in srgb, #6ee7b7 15%, transparent);
+}
+
+/* ─── Sand theme ────────────────────────────────────────────────────────────── */
+
+[data-theme="sand"] {
+  --bg-base: #faf9f7;
+  --bg-surface: #f5f3ef;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #eeece6;
+  --bg-column: #eae8e2;
+  --bg-card: #ffffff;
+  --text-primary: #2c2a24;
+  --text-secondary: #6b6456;
+  --text-tertiary: #a09880;
+  --border-subtle: #e4e0d8;
+  --border-medium: #d4cfc4;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.12);
+  --color-brand: #c2692a;
+  --color-brand-subtle: color-mix(in srgb, #c2692a 12%, transparent);
+}
+
+/* ─── Mocha theme ───────────────────────────────────────────────────────────── */
+
+[data-theme="mocha"] {
+  --bg-base: #1a1410;
+  --bg-surface: #221c16;
+  --bg-elevated: #2c2418;
+  --bg-subtle: #342c20;
+  --bg-column: #281f14;
+  --bg-card: #2c2418;
+  --text-primary: #f0e8dc;
+  --text-secondary: #a08870;
+  --text-tertiary: #5a4a38;
+  --border-subtle: #3c3028;
+  --border-medium: #4e4030;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 40px rgba(0, 0, 0, 0.7);
+  --color-brand: #e8a87c;
+  --color-brand-subtle: color-mix(in srgb, #e8a87c 15%, transparent);
+}
+
+/* ─── Global base styles ────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Allow text selection in inputs and text areas */
+input, textarea, [contenteditable] {
+  user-select: text;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
