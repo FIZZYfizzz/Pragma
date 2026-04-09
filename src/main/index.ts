@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
+import { initDb, getDb } from './db'
+import { registerAllIpc } from './ipc'
 
 // ─── Single instance lock ─────────────────────────────────────────────────────
 
@@ -73,6 +75,9 @@ app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.pragma.app')
   }
+
+  initDb()
+  registerAllIpc(getDb())
 
   createWindow()
 
