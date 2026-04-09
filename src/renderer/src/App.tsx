@@ -3,6 +3,7 @@ import { TitleBar } from '@/components/layout/TitleBar'
 import { PinScreen } from '@/screens/PinScreen'
 import { ProfilesScreen } from '@/screens/ProfilesScreen'
 import { HomeScreen } from '@/screens/HomeScreen'
+import { BoardScreen } from '@/screens/BoardScreen'
 import { useAppStore } from '@/stores/app.store'
 
 export default function App() {
@@ -34,12 +35,7 @@ export default function App() {
 
       {view === 'home' && <HomeScreen />}
 
-      {view === 'board' && (
-        // Phase 5 placeholder
-        <main className="flex-1 flex items-center justify-center">
-          <span style={{ color: 'var(--text-tertiary)' }}>Board — coming in Phase 5</span>
-        </main>
-      )}
+      {view === 'board' && <BoardScreen />}
     </div>
   )
 }
