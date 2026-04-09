@@ -1,6 +1,23 @@
+import { useEffect } from 'react'
 import { TitleBar } from '@/components/layout/TitleBar'
+import { PinScreen } from '@/screens/PinScreen'
+import { ProfilesScreen } from '@/screens/ProfilesScreen'
+import { useAppStore } from '@/stores/app.store'
 
 export default function App() {
+  const view = useAppStore((s) => s.view)
+  const setView = useAppStore((s) => s.setView)
+
+  useEffect(() => {
+    Promise.all([
+      window.pragma.pin.exists(),
+      window.pragma.settings.get('theme'),
+    ]).then(([hasPIN, theme]) => {
+      if (theme) document.documentElement.setAttribute('data-theme', theme)
+      setView(hasPIN ? 'pin' : 'profiles')
+    })
+  }, [])
+
   return (
     <div
       className="flex flex-col h-screen overflow-hidden"
@@ -8,18 +25,25 @@ export default function App() {
     >
       <TitleBar />
 
-      {/* Placeholder — replaced in Phase 3 with PIN screen / router */}
-      <main className="flex-1 flex flex-col items-center justify-center gap-3 select-none">
-        <p
-          className="text-2xl font-semibold tracking-widest uppercase"
-          style={{ color: 'var(--color-brand)', letterSpacing: '0.2em' }}
-        >
-          Pragma
-        </p>
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          Structured thought, purposeful action.
-        </p>
-      </main>
+      {view === 'init' && null}
+
+      {view === 'pin' && <PinScreen />}
+
+      {view === 'profiles' && <ProfilesScreen />}
+
+      {view === 'home' && (
+        // Phase 4 placeholder
+        <main className="flex-1 flex items-center justify-center">
+          <span style={{ color: 'var(--text-tertiary)' }}>Home — coming in Phase 4</span>
+        </main>
+      )}
+
+      {view === 'board' && (
+        // Phase 5 placeholder
+        <main className="flex-1 flex items-center justify-center">
+          <span style={{ color: 'var(--text-tertiary)' }}>Board — coming in Phase 5</span>
+        </main>
+      )}
     </div>
   )
 }
