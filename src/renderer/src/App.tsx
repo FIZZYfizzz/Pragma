@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { TitleBar } from '@/components/layout/TitleBar'
 import { PinScreen } from '@/screens/PinScreen'
 import { ProfilesScreen } from '@/screens/ProfilesScreen'
+import { HomeScreen } from '@/screens/HomeScreen'
 import { useAppStore } from '@/stores/app.store'
 
 export default function App() {
@@ -31,12 +32,7 @@ export default function App() {
 
       {view === 'profiles' && <ProfilesScreen />}
 
-      {view === 'home' && (
-        // Phase 4 placeholder
-        <main className="flex-1 flex items-center justify-center">
-          <span style={{ color: 'var(--text-tertiary)' }}>Home — coming in Phase 4</span>
-        </main>
-      )}
+      {view === 'home' && <HomeScreen />}
 
       {view === 'board' && (
         // Phase 5 placeholder
