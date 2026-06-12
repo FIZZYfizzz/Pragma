@@ -4,6 +4,7 @@ node_modules
 # build outputs
 out
 dist
+release
 
 # electron-builder cache
 .cache
@@ -15,6 +16,9 @@ dist
 # OS
 .DS_Store
 Thumbs.db
+
+# TypeScript build info
+*.tsbuildinfo
 
 # editor
 .vscode
