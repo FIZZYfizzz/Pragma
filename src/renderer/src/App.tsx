@@ -4,6 +4,7 @@ import { PinScreen } from '@/screens/PinScreen'
 import { ProfilesScreen } from '@/screens/ProfilesScreen'
 import { HomeScreen } from '@/screens/HomeScreen'
 import { BoardScreen } from '@/screens/BoardScreen'
+import { Toaster } from '@/components/ui/Toaster'
 import { useAppStore } from '@/stores/app.store'
 
 export default function App() {
@@ -36,6 +37,8 @@ export default function App() {
       {view === 'home' && <HomeScreen />}
 
       {view === 'board' && <BoardScreen />}
+
+      <Toaster />
     </div>
   )
 }

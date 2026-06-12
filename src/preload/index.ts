@@ -6,6 +6,7 @@ import type {
   CreateLaneInput, UpdateLaneInput,
   CreateCardInput, UpdateCardInput,
   CreateTagInput, UpdateTagInput,
+  PinVerifyResult,
 } from '../shared/types'
 
 /**
@@ -27,7 +28,9 @@ const pragmaAPI = {
     onMaximizeChange: (cb: (maximized: boolean) => void) => {
       const handler = (_: Electron.IpcRendererEvent, val: boolean) => cb(val)
       ipcRenderer.on('window:maximized-changed', handler)
-      return () => ipcRenderer.off('window:maximized-changed', handler)
+      return () => {
+        ipcRenderer.off('window:maximized-changed', handler)
+      }
     },
   },
 
@@ -39,7 +42,8 @@ const pragmaAPI = {
   pin: {
     exists: (): Promise<boolean> => ipcRenderer.invoke('db:pin:exists'),
     set: (pin: string): Promise<void> => ipcRenderer.invoke('db:pin:set', pin),
-    verify: (pin: string): Promise<boolean> => ipcRenderer.invoke('db:pin:verify', pin),
+    verify: (pin: string): Promise<PinVerifyResult> => ipcRenderer.invoke('db:pin:verify', pin),
+    remove: (currentPin: string): Promise<boolean> => ipcRenderer.invoke('db:pin:remove', currentPin),
   },
 
   // ─── Profiles ─────────────────────────────────────────────────────────────
@@ -94,6 +98,14 @@ const pragmaAPI = {
     delete: (id: string) => ipcRenderer.invoke('db:tag:delete', id),
     addToCard: (cardId: string, tagId: string) => ipcRenderer.invoke('db:tag:addToCard', cardId, tagId),
     removeFromCard: (cardId: string, tagId: string) => ipcRenderer.invoke('db:tag:removeFromCard', cardId, tagId),
+  },
+
+  // ─── App (export / import) ────────────────────────────────────────────────
+  app: {
+    exportPragma: (pragmaId: string) => ipcRenderer.invoke('app:export-pragma', pragmaId),
+    importPragma: (profileId: string) => ipcRenderer.invoke('app:import-pragma', profileId),
+    exportBoard: (boardId: string) => ipcRenderer.invoke('app:export-board', boardId),
+    importBoard: (pragmaId: string) => ipcRenderer.invoke('app:import-board', pragmaId),
   },
 }
 

@@ -77,5 +77,15 @@ export function initSchema(db: Database): void {
       tagId  TEXT NOT NULL REFERENCES tags(id)  ON DELETE CASCADE,
       PRIMARY KEY (cardId, tagId)
     );
+
+    -- Indexes on foreign keys for faster cascaded queries
+    CREATE INDEX IF NOT EXISTS idx_pragmas_profileId   ON pragmas(profileId);
+    CREATE INDEX IF NOT EXISTS idx_boards_pragmaId     ON boards(pragmaId);
+    CREATE INDEX IF NOT EXISTS idx_lanes_boardId       ON lanes(boardId);
+    CREATE INDEX IF NOT EXISTS idx_cards_laneId        ON cards(laneId);
+    CREATE INDEX IF NOT EXISTS idx_tags_pragmaId       ON tags(pragmaId);
+    CREATE INDEX IF NOT EXISTS idx_cardTags_cardId     ON cardTags(cardId);
+    CREATE INDEX IF NOT EXISTS idx_cardTags_tagId      ON cardTags(tagId);
+    CREATE INDEX IF NOT EXISTS idx_cards_isArchived    ON cards(isArchived);
   `)
 }

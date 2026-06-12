@@ -2,9 +2,8 @@ import { randomUUID } from 'crypto'
 import type { Database } from 'better-sqlite3'
 import type {
   Board, Lane, Card, Tag,
-  CardWithTags, LaneWithCards, BoardWithLanes,
+  CardWithTags, BoardWithLanes,
   CreateBoardInput, UpdateBoardInput,
-  BOARD_TEMPLATES,
 } from '../../shared/types'
 import { BOARD_TEMPLATES as TEMPLATES } from '../../shared/types'
 import { getAppendPosition } from '../../shared/position'

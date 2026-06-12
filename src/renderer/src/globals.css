@@ -173,6 +173,15 @@
   --color-brand-subtle: color-mix(in srgb, #e8a87c 15%, transparent);
 }
 
+/* ─── Native widget color scheme (date pickers, scrollbars) ─────────────────── */
+
+:root, [data-theme="sand"] {
+  color-scheme: light;
+}
+[data-theme="dark"], [data-theme="blue"], [data-theme="violet"], [data-theme="sage"], [data-theme="mocha"] {
+  color-scheme: dark;
+}
+
 /* ─── Global base styles ────────────────────────────────────────────────────── */
 
 *, *::before, *::after {
@@ -233,4 +242,14 @@ input, textarea, [contenteditable] {
 
 .animate-shake {
   animation: shake 0.5s ease-in-out;
+}
+
+/* Toast entrance */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out;
 }

@@ -2,18 +2,30 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type {
   BoardWithLanes,
+  Tag,
   UpdateCardInput,
   UpdateLaneInput,
   Priority,
 } from '@shared/types'
 import { getBetweenPosition, getAppendPosition } from '@shared/position'
+import { toast } from './toast.store'
 
 interface BoardStore {
   board: BoardWithLanes | null
+  pragmaTags: Tag[]
   loading: boolean
+  error: string | null
+  _snapshot: BoardWithLanes | null
 
   reset: () => void
   loadBoard: (boardId: string) => Promise<void>
+  snapshotBoard: () => void
+  rollbackBoard: () => void
+
+  // ── Tags ──
+  createTag: (name: string, color: string) => Promise<void>
+  deleteTag: (tagId: string) => Promise<void>
+  toggleCardTag: (cardId: string, laneId: string, tagId: string) => Promise<void>
 
   // ── Lanes ──
   addLane: (name: string) => Promise<void>
@@ -37,28 +49,99 @@ const PRIORITY_CYCLE: Priority[] = ['none', 'low', 'medium', 'high', 'urgent']
 export const useBoardStore = create<BoardStore>()(
   immer((set, get) => ({
     board: null,
+    pragmaTags: [],
     loading: false,
+    error: null,
+    _snapshot: null,
 
     reset() {
       set((s) => {
         s.board = null
+        s.pragmaTags = []
         s.loading = false
+        s.error = null
+        s._snapshot = null
       })
+    },
+
+    snapshotBoard() {
+      const board = get().board
+      if (!board) return
+      set((s) => { s._snapshot = JSON.parse(JSON.stringify(board)) as BoardWithLanes })
+    },
+
+    rollbackBoard() {
+      const snap = get()._snapshot
+      if (!snap) return
+      set((s) => { s.board = snap; s._snapshot = null })
     },
 
     async loadBoard(boardId) {
       set((s) => {
         s.loading = true
         s.board = null
+        s.pragmaTags = []
+        s.error = null
       })
-      const board = (await window.pragma.board.full(boardId)) as BoardWithLanes
-      // Ensure sorted by position
-      board.lanes.sort((a, b) => a.position - b.position)
-      board.lanes.forEach((lane) => lane.cards.sort((a, b) => a.position - b.position))
+      try {
+        const board = (await window.pragma.board.full(boardId)) as BoardWithLanes
+        board.lanes.sort((a, b) => a.position - b.position)
+        board.lanes.forEach((lane) => lane.cards.sort((a, b) => a.position - b.position))
+        const tags = (await window.pragma.tag.listByPragma(board.pragmaId)) as Tag[]
+        set((s) => {
+          s.board = board
+          s.pragmaTags = tags
+          s.loading = false
+        })
+      } catch (err) {
+        set((s) => {
+          s.loading = false
+          s.error = err instanceof Error ? err.message : 'Failed to load board'
+        })
+      }
+    },
+
+    // ── Tag actions ───────────────────────────────────────────────────────────
+
+    async createTag(name, color) {
+      const board = get().board
+      if (!board) return
+      const tag = (await window.pragma.tag.create({ pragmaId: board.pragmaId, name, color })) as Tag
+      set((s) => { s.pragmaTags.push(tag) })
+    },
+
+    async deleteTag(tagId) {
+      await window.pragma.tag.delete(tagId)
       set((s) => {
-        s.board = board
-        s.loading = false
+        s.pragmaTags = s.pragmaTags.filter((t) => t.id !== tagId)
+        s.board?.lanes.forEach((lane) => {
+          lane.cards.forEach((card) => {
+            card.tags = card.tags.filter((t) => t.id !== tagId)
+          })
+        })
       })
+    },
+
+    async toggleCardTag(cardId, laneId, tagId) {
+      const lane = get().board?.lanes.find((l) => l.id === laneId)
+      const card = lane?.cards.find((c) => c.id === cardId)
+      if (!card) return
+      const hasTag = card.tags.some((t) => t.id === tagId)
+      if (hasTag) {
+        set((s) => {
+          const c = s.board?.lanes.find((l) => l.id === laneId)?.cards.find((c) => c.id === cardId)
+          if (c) c.tags = c.tags.filter((t) => t.id !== tagId)
+        })
+        await window.pragma.tag.removeFromCard(cardId, tagId)
+      } else {
+        const tag = get().pragmaTags.find((t) => t.id === tagId)
+        if (!tag) return
+        set((s) => {
+          const c = s.board?.lanes.find((l) => l.id === laneId)?.cards.find((c) => c.id === cardId)
+          if (c) c.tags.push(tag)
+        })
+        await window.pragma.tag.addToCard(cardId, tagId)
+      }
     },
 
     // ── Lane actions ──────────────────────────────────────────────────────────
@@ -178,10 +261,15 @@ export const useBoardStore = create<BoardStore>()(
         const c = l?.cards[idx]
         if (c) c.position = position
       })
-      await window.pragma.card.move(cardId, lane.id, position)
+      try {
+        await window.pragma.card.move(cardId, lane.id, position)
+        set((s) => { s._snapshot = null })
+      } catch {
+        get().rollbackBoard()
+        toast.error("Couldn't save card move — restored previous order")
+      }
     },
   }))
 )
 
-// Expose getAppendPosition for use in components
 export { getAppendPosition }

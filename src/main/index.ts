@@ -37,6 +37,10 @@ function createWindow(): void {
     mainWindow!.show()
   })
 
+  // Notify renderer when maximize state changes so the title-bar icon stays in sync
+  mainWindow.on('maximize', () => mainWindow?.webContents.send('window:maximized-changed', true))
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized-changed', false))
+
   // Open external links in the OS browser, not in Electron
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
@@ -65,7 +69,6 @@ ipcMain.on('window:maximize', () => {
 
 ipcMain.on('window:close', () => mainWindow?.close())
 
-// Tell renderer whether the window is maximized (so the button icon can change)
 ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────

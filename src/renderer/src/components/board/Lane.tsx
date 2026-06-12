@@ -4,6 +4,8 @@ import { useDroppable } from '@dnd-kit/core'
 import type { LaneWithCards } from '@shared/types'
 import { cn } from '@/lib/cn'
 import { CardItem } from './CardItem'
+import { Dialog } from '@/components/ui/Dialog'
+import { Button } from '@/components/ui/Button'
 import { useBoardStore } from '@/stores/board.store'
 
 interface LaneProps {
@@ -18,8 +20,9 @@ export function Lane({ lane }: LaneProps) {
   const [adding, setAdding] = useState(false)
   const [newCardTitle, setNewCardTitle] = useState('')
   const [saving, setSaving] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
-  const addCardInputRef = useRef<HTMLInputElement>(null)
+  const addCardInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Make lane itself droppable for the empty-lane case
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: lane.id })
@@ -125,7 +128,11 @@ export function Lane({ lane }: LaneProps) {
             </button>
             <button
               title="Delete lane"
-              onClick={() => deleteLane(lane.id)}
+              onClick={() => {
+                // Empty lanes delete immediately; lanes with cards need confirmation
+                if (lane.cards.length === 0) deleteLane(lane.id)
+                else setConfirmingDelete(true)
+              }}
               className="p-1 rounded cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
               style={{ color: '#ef4444' }}
             >
@@ -155,7 +162,7 @@ export function Lane({ lane }: LaneProps) {
         {adding ? (
           <form onSubmit={handleAddCard} className="flex flex-col gap-1.5">
             <textarea
-              ref={addCardInputRef as React.RefObject<HTMLTextAreaElement>}
+              ref={addCardInputRef}
               value={newCardTitle}
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -221,6 +228,29 @@ export function Lane({ lane }: LaneProps) {
           </button>
         )}
       </div>
+
+      {/* Delete confirmation */}
+      <Dialog isOpen={confirmingDelete} onClose={() => setConfirmingDelete(false)}>
+        <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+          Delete "{lane.name}" and its {lane.cards.length} card{lane.cards.length === 1 ? '' : 's'}?
+          This cannot be undone.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={() => setConfirmingDelete(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={() => {
+              setConfirmingDelete(false)
+              deleteLane(lane.id)
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      </Dialog>
     </div>
   )
 }

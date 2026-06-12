@@ -14,8 +14,10 @@ import type { CardWithTags } from '@shared/types'
 import { cn } from '@/lib/cn'
 import { Lane } from '@/components/board/Lane'
 import { CardItem } from '@/components/board/CardItem'
+import { TagManagerDialog } from '@/components/board/TagsDialog'
 import { useBoardStore } from '@/stores/board.store'
 import { useAppStore } from '@/stores/app.store'
+import { toast } from '@/stores/toast.store'
 
 // ─── Add lane form ────────────────────────────────────────────────────────────
 
@@ -88,12 +90,13 @@ export function BoardScreen() {
   const setView = useAppStore((s) => s.setView)
   const setActiveBoard = useAppStore((s) => s.setActiveBoard)
 
-  const { board, loading, loadBoard, reset, addLane, reorderCardsInLane, moveCardToLane, persistCardMove } =
+  const { board, loading, error, loadBoard, reset, addLane, reorderCardsInLane, moveCardToLane, persistCardMove, snapshotBoard, rollbackBoard } =
     useBoardStore()
 
   const [activeCard, setActiveCard] = useState<CardWithTags | null>(null)
   const [activeLaneId, setActiveLaneId] = useState<string | null>(null)
   const [addingLane, setAddingLane] = useState(false)
+  const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const dragOriginLaneId = useRef<string | null>(null)
 
   useEffect(() => {
@@ -114,6 +117,7 @@ export function BoardScreen() {
     const cardId = event.active.id as string
     const lane = board.lanes.find((l) => l.cards.some((c) => c.id === cardId))
     if (!lane) return
+    snapshotBoard()
     dragOriginLaneId.current = lane.id
     setActiveLaneId(lane.id)
     setActiveCard(lane.cards.find((c) => c.id === cardId) ?? null)
@@ -164,8 +168,9 @@ export function BoardScreen() {
   function handleDragCancel() {
     setActiveCard(null)
     setActiveLaneId(null)
-    // Reload to restore original order on cancel
-    loadBoard(activeBoardId)
+    dragOriginLaneId.current = null
+    // Restore pre-drag order from the snapshot taken in handleDragStart
+    rollbackBoard()
   }
 
   function goBack() {
@@ -173,7 +178,46 @@ export function BoardScreen() {
     setView('home')
   }
 
+  async function handleExportBoard() {
+    if (!board) return
+    const result = (await window.pragma.app.exportBoard(board.id)) as {
+      success: boolean
+      error?: string
+    }
+    if (result.success) toast.success('Board exported')
+    else if (result.error) toast.error(result.error)
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3">
+        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          Couldn't load this board
+        </span>
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          {error}
+        </span>
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={() => loadBoard(activeBoardId)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-white cursor-pointer"
+            style={{ background: 'var(--color-brand)' }}
+          >
+            Retry
+          </button>
+          <button
+            onClick={goBack}
+            className="px-3 py-1.5 rounded-lg text-sm cursor-pointer"
+            style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-medium)' }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading || !board) {
     return (
@@ -228,6 +272,47 @@ export function BoardScreen() {
         >
           {board.name}
         </h1>
+
+        <div className="flex-1" />
+
+        <button
+          onClick={handleExportBoard}
+          className="flex items-center gap-1.5 text-sm cursor-pointer transition-colors px-2 py-1 rounded-lg shrink-0"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-subtle)'
+            e.currentTarget.style.color = 'var(--text-secondary)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--text-tertiary)'
+          }}
+          title="Export this board to a file"
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.75 14A1.75 1.75 0 011 12.25v-2.5a.75.75 0 011.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25v-2.5a.75.75 0 011.5 0v2.5A1.75 1.75 0 0113.25 14H2.75zM8.75 2.561l1.97 1.969a.749.749 0 101.06-1.06L8.53.22a.749.749 0 00-1.06 0L4.22 3.47a.749.749 0 101.06 1.06l1.97-1.969v5.689a.75.75 0 001.5 0V2.561z" />
+          </svg>
+          Export
+        </button>
+
+        <button
+          onClick={() => setTagManagerOpen(true)}
+          className="flex items-center gap-1.5 text-sm cursor-pointer transition-colors px-2 py-1 rounded-lg shrink-0"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-subtle)'
+            e.currentTarget.style.color = 'var(--text-secondary)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--text-tertiary)'
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 010 2.474l-5.026 5.026a1.75 1.75 0 01-2.474 0l-6.25-6.25A1.752 1.752 0 011 7.775zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 00.354 0l5.025-5.025a.25.25 0 000-.354l-6.25-6.25a.25.25 0 00-.177-.073H2.75a.25.25 0 00-.25.25zM6 5a1 1 0 110 2 1 1 0 010-2z" />
+          </svg>
+          Tags
+        </button>
       </header>
 
       {/* Lanes */}
@@ -287,6 +372,8 @@ export function BoardScreen() {
           )}
         </DragOverlay>
       </DndContext>
+
+      <TagManagerDialog isOpen={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
     </div>
   )
 }

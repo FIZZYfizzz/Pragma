@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { format, isBefore, isToday, startOfDay } from 'date-fns'
 import type { CardWithTags, Priority } from '@shared/types'
 import { cn } from '@/lib/cn'
 import { useBoardStore } from '@/stores/board.store'
+import { CardTagPickerDialog } from './TagsDialog'
+import { CardDetailDialog } from './CardDetailDialog'
 
 // ─── Priority ─────────────────────────────────────────────────────────────────
 
@@ -19,6 +22,26 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   none: 'No priority', low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent',
 }
 
+// ─── Due date chip ────────────────────────────────────────────────────────────
+
+function DueDateChip({ dueDate }: { dueDate: number }) {
+  const overdue = isBefore(dueDate, startOfDay(new Date()))
+  const today = isToday(dueDate)
+  const color = overdue ? '#ef4444' : today ? '#fbbf24' : 'var(--text-tertiary)'
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] font-medium"
+      style={{ color }}
+      title={overdue ? 'Overdue' : today ? 'Due today' : 'Due date'}
+    >
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 0a8 8 0 110 16A8 8 0 018 0zM1.5 8a6.5 6.5 0 1013 0 6.5 6.5 0 00-13 0zm7-3.25v2.992l2.028 .812a.75.75 0 01-.557 1.392l-2.5-1A.751.751 0 017 8.25v-3.5a.75.75 0 011.5 0z" />
+      </svg>
+      {today ? 'Today' : format(dueDate, 'd MMM')}
+    </span>
+  )
+}
+
 // ─── Card item ────────────────────────────────────────────────────────────────
 
 interface CardItemProps {
@@ -32,7 +55,11 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
   const [hovered, setHovered] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(card.title)
+  const [tagPickerOpen, setTagPickerOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  // A drag's trailing click would otherwise open the detail dialog after every drop
+  const wasDragged = useRef(false)
 
   const {
     attributes,
@@ -47,6 +74,10 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
     transform: CSS.Transform.toString(transform),
     transition,
   }
+
+  useEffect(() => {
+    if (isDragging) wasDragged.current = true
+  }, [isDragging])
 
   useEffect(() => {
     if (editing) {
@@ -91,6 +122,8 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
     )
   }
 
+  const hasMeta = card.dueDate != null || !!card.description || card.tags.length > 0
+
   return (
     <div
       ref={setNodeRef}
@@ -114,6 +147,13 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
           boxShadow: 'var(--shadow-card)',
           cursor: editing ? 'text' : 'grab',
         }}
+        onClick={() => {
+          if (wasDragged.current) {
+            wasDragged.current = false
+            return
+          }
+          if (!editing && !isDragging) setDetailOpen(true)
+        }}
         {...(!editing ? { ...attributes, ...listeners } : {})}
       >
         {/* Title area */}
@@ -125,6 +165,7 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
               onChange={(e) => setEditTitle(e.target.value)}
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
               className="w-full text-sm bg-transparent outline-none"
               style={{ color: 'var(--text-primary)' }}
             />
@@ -132,10 +173,42 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
             <span
               className="text-sm block"
               style={{ color: 'var(--text-primary)', wordBreak: 'break-word' }}
-              onDoubleClick={() => setEditing(true)}
             >
               {card.title}
             </span>
+          )}
+
+          {/* Meta row: due date, description indicator, tag dots */}
+          {hasMeta && (
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {card.dueDate != null && <DueDateChip dueDate={card.dueDate} />}
+              {!!card.description && (
+                <svg
+                  width="11" height="11" viewBox="0 0 16 16"
+                  style={{ fill: 'var(--text-tertiary)' }}
+                >
+                  <title>Has description</title>
+                  <path d="M0 3.75A.75.75 0 01.75 3h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 3.75zm0 4A.75.75 0 01.75 7h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 7.75zm0 4a.75.75 0 01.75-.75h8.5a.75.75 0 010 1.5H.75a.75.75 0 01-.75-.75z" />
+                </svg>
+              )}
+              {card.tags.length > 0 && (
+                <span className="flex items-center gap-1">
+                  {card.tags.slice(0, 5).map((tag) => (
+                    <span
+                      key={tag.id}
+                      title={tag.name}
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: tag.color }}
+                    />
+                  ))}
+                  {card.tags.length > 5 && (
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      +{card.tags.length - 5}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
           )}
         </div>
 
@@ -146,20 +219,30 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
             <button
               title={PRIORITY_LABELS[card.priority]}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => cycleCardPriority(card.id, laneId)}
+              onClick={(e) => { e.stopPropagation(); cycleCardPriority(card.id, laneId) }}
               className="w-4 h-4 rounded-full cursor-pointer transition-transform hover:scale-125"
               style={{
                 background:
-                  card.priority === 'none'
-                    ? 'var(--border-medium)'
-                    : PRIORITY_COLORS[card.priority],
+                  card.priority === 'none' ? 'var(--border-medium)' : PRIORITY_COLORS[card.priority],
               }}
             />
+            {/* Tags */}
+            <button
+              title="Tags"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setTagPickerOpen(true) }}
+              className="p-0.5 rounded cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 010 2.474l-5.026 5.026a1.75 1.75 0 01-2.474 0l-6.25-6.25A1.752 1.752 0 011 7.775zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 00.354 0l5.025-5.025a.25.25 0 000-.354l-6.25-6.25a.25.25 0 00-.177-.073H2.75a.25.25 0 00-.25.25zM6 5a1 1 0 110 2 1 1 0 010-2z" />
+              </svg>
+            </button>
             {/* Edit */}
             <button
               title="Edit title"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setEditing(true)}
+              onClick={(e) => { e.stopPropagation(); setEditing(true) }}
               className="p-0.5 rounded cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -171,7 +254,7 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
             <button
               title="Delete card"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => deleteCard(card.id, laneId)}
+              onClick={(e) => { e.stopPropagation(); deleteCard(card.id, laneId) }}
               className="p-0.5 rounded cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
               style={{ color: '#ef4444' }}
             >
@@ -182,6 +265,21 @@ export function CardItem({ card, laneId, overlay = false }: CardItemProps) {
           </div>
         )}
       </div>
+
+      <CardDetailDialog
+        isOpen={detailOpen}
+        card={card}
+        laneId={laneId}
+        onClose={() => setDetailOpen(false)}
+        onOpenTags={() => setTagPickerOpen(true)}
+      />
+
+      <CardTagPickerDialog
+        isOpen={tagPickerOpen}
+        card={card}
+        laneId={laneId}
+        onClose={() => setTagPickerOpen(false)}
+      />
     </div>
   )
 }

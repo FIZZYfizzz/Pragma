@@ -156,6 +156,16 @@ export interface UpdateTagInput {
   color?: string
 }
 
+// ─── PIN ──────────────────────────────────────────────────────────────────────
+
+export interface PinVerifyResult {
+  ok: boolean
+  /** Epoch ms until which further attempts are rejected (set when locked out) */
+  lockedUntil?: number
+  /** Failed attempts remaining before lockout (omitted on success) */
+  attemptsLeft?: number
+}
+
 // ─── Board templates ──────────────────────────────────────────────────────────
 
 export type BoardTemplate = 'blank' | 'kanban' | 'sprint' | 'simple'

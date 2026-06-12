@@ -13,6 +13,7 @@ import { registerBoardIpc } from './board.ipc'
 import { registerLaneIpc } from './lane.ipc'
 import { registerCardIpc } from './card.ipc'
 import { registerTagIpc } from './tag.ipc'
+import { registerAppIpc } from './app.ipc'
 
 export function registerAllIpc(db: Database): void {
   registerSettingsIpc(createSettingsRepo(db))
@@ -22,4 +23,5 @@ export function registerAllIpc(db: Database): void {
   registerLaneIpc(createLaneRepo(db))
   registerCardIpc(createCardRepo(db))
   registerTagIpc(createTagRepo(db))
+  registerAppIpc(db)
 }

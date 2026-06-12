@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Board, BoardTemplate, Profile, PragmaProject } from '@shared/types'
-import { BOARD_TEMPLATES } from '@shared/types'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { useAppStore } from '@/stores/app.store'
+import { toast } from '@/stores/toast.store'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -220,7 +220,6 @@ function CreateBoardDialog({
               )}
               style={{
                 background: template === key ? 'var(--color-brand-subtle)' : 'var(--bg-surface)',
-                ringColor: 'var(--color-brand)',
                 boxShadow: template === key ? `0 0 0 2px var(--color-brand)` : undefined,
               }}
             >
@@ -298,6 +297,7 @@ function Sidebar({
   onDeletePragma,
   onRenamePragma,
   onSwitchProfile,
+  onImport,
 }: {
   profile: Profile
   pragmas: PragmaProject[]
@@ -307,6 +307,7 @@ function Sidebar({
   onDeletePragma: (id: string) => void
   onRenamePragma: (id: string, name: string) => void
   onSwitchProfile: () => void
+  onImport: () => void
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -492,6 +493,24 @@ function Sidebar({
           </svg>
           New Pragma
         </button>
+        <button
+          onClick={onImport}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors duration-100"
+          style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-subtle)'
+            e.currentTarget.style.color = 'var(--text-secondary)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--text-tertiary)'
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.75 14A1.75 1.75 0 011 12.25v-2.5a.75.75 0 011.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25v-2.5a.75.75 0 011.5 0v2.5A1.75 1.75 0 0113.25 14H2.75zM7.25 7.689V2a.75.75 0 011.5 0v5.689l1.97-1.969a.749.749 0 111.06 1.06l-3.25 3.25a.749.749 0 01-1.06 0L4.22 6.78a.749.749 0 111.06-1.06l1.97 1.969z" />
+          </svg>
+          Import Pragma
+        </button>
       </div>
     </aside>
   )
@@ -640,6 +659,51 @@ export function HomeScreen() {
     setConfirmDelete(null)
   }
 
+  // ── Export / Import ──
+
+  async function handleExport() {
+    if (!activePragmaId) return
+    const result = (await window.pragma.app.exportPragma(activePragmaId)) as {
+      success: boolean
+      path?: string
+      error?: string
+    }
+    if (result.success) toast.success('Pragma exported')
+    else if (result.error) toast.error(result.error)
+  }
+
+  async function handleImportBoard() {
+    if (!activePragmaId) return
+    const result = (await window.pragma.app.importBoard(activePragmaId)) as {
+      success: boolean
+      boardId?: string
+      error?: string
+    }
+    if (result.success && result.boardId) {
+      const list = (await window.pragma.board.list(activePragmaId)) as Board[]
+      setBoards(list)
+      toast.success('Board imported')
+    } else if (result.error) {
+      toast.error(result.error)
+    }
+  }
+
+  async function handleImport() {
+    const result = (await window.pragma.app.importPragma(activeProfileId)) as {
+      success: boolean
+      pragmaId?: string
+      error?: string
+    }
+    if (result.success && result.pragmaId) {
+      const list = (await window.pragma.pragma.list(activeProfileId)) as PragmaProject[]
+      setPragmas(list)
+      setActivePragma(result.pragmaId)
+      toast.success('Pragma imported')
+    } else if (result.error) {
+      toast.error(result.error)
+    }
+  }
+
   function openBoard(board: Board) {
     setActiveBoard(board.id)
     setView('board')
@@ -672,6 +736,7 @@ export function HomeScreen() {
           }}
           onRenamePragma={handleRenamePragma}
           onSwitchProfile={switchProfile}
+          onImport={handleImport}
         />
 
         {/* Main content */}
@@ -704,9 +769,23 @@ export function HomeScreen() {
                   )}
                 </div>
                 {activePragmaId && (
-                  <Button variant="primary" size="sm" onClick={() => setShowCreateBoard(true)}>
-                    + New Board
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="ghost" size="sm" onClick={handleImportBoard} title="Import a board into this Pragma">
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" className="mr-1.5">
+                        <path d="M2.75 14A1.75 1.75 0 011 12.25v-2.5a.75.75 0 011.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25v-2.5a.75.75 0 011.5 0v2.5A1.75 1.75 0 0113.25 14H2.75zM7.25 7.689V2a.75.75 0 011.5 0v5.689l1.97-1.969a.749.749 0 111.06 1.06l-3.25 3.25a.749.749 0 01-1.06 0L4.22 6.78a.749.749 0 111.06-1.06l1.97 1.969z" />
+                      </svg>
+                      Import Board
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleExport} title="Export this Pragma to a file">
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" className="mr-1.5">
+                        <path d="M2.75 14A1.75 1.75 0 011 12.25v-2.5a.75.75 0 011.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25v-2.5a.75.75 0 011.5 0v2.5A1.75 1.75 0 0113.25 14H2.75zM8.75 2.561l1.97 1.969a.749.749 0 101.06-1.06L8.53.22a.749.749 0 00-1.06 0L4.22 3.47a.749.749 0 101.06 1.06l1.97-1.969v5.689a.75.75 0 001.5 0V2.561z" />
+                      </svg>
+                      Export
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={() => setShowCreateBoard(true)}>
+                      + New Board
+                    </Button>
+                  </div>
                 )}
               </div>
 
